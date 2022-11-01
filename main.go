@@ -61,6 +61,15 @@ func signin(c *gin.Context){
     // get password, hash password compare it
     // err = bcrypt.CompareHashAndPassword(hashed_password, password)
     // if err != nil {}
+    _name := "qq"
+    var user Users
+    db.Table("users").Where("username = ?", _name).Select("username, email, password").Find(&user)
+
+    c.JSON(http.StatusOK, gin.H{
+        "status": "success",
+	"username": user.Username,
+	"email": user.Email,
+    })
 }
 
 func index(c *gin.Context){
@@ -87,6 +96,7 @@ func main(){
     router := gin.Default()
     router.LoadHTMLGlob("tmpl/*")
     router.GET("/signup", signup)
+    router.GET("/signin", signin)
     router.POST("/feed", feed)
     router.POST("/", index)
     router.Run()

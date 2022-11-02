@@ -57,19 +57,29 @@ func signup(c *gin.Context){
     c.HTML(http.StatusOK, "signup.tmpl", gin.H{})
 }
 
-func signin(c *gin.Context){
-    // get password, hash password compare it
-    // err = bcrypt.CompareHashAndPassword(hashed_password, password)
-    // if err != nil {}
-    _name := "qq"
+func signin_post(c *gin.Context){
+     _name := c.PostForm("username")
+    password := c.PostForm("password")
+
     var user Users
     db.Table("users").Where("username = ?", _name).Select("username, email, password").Find(&user)
+    ok := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+    if ok != nil {
+        log.Println(ok)
+        c.JSON(http.StatusUnauthorized, gin.H{
+      	  "status": "fail",
+        })
+    } else {
+	c.JSON(http.StatusOK, gin.H{
+          "status": "success",
+	  "username": user.Username,
+	  "email": user.Email,
+        })
+    }
+}
 
-    c.JSON(http.StatusOK, gin.H{
-        "status": "success",
-	"username": user.Username,
-	"email": user.Email,
-    })
+func signin(c *gin.Context){
+    c.HTML(http.StatusOK, "signin.tmpl", gin.H{})
 }
 
 func index(c *gin.Context){
@@ -97,6 +107,7 @@ func main(){
     router.LoadHTMLGlob("tmpl/*")
     router.GET("/signup", signup)
     router.GET("/signin", signin)
+    router.POST("/signin", signin_post)
     router.POST("/feed", feed)
     router.POST("/", index)
     router.Run()

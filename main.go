@@ -83,7 +83,7 @@ func signin(c *gin.Context){
 }
 
 func index(c *gin.Context){
-    c.HTML(http.StatusOK, "signup.tmpl", gin.H{})
+    c.HTML(http.StatusOK, "index.tmpl", gin.H{})
 }
 
 func main(){
@@ -109,6 +109,6 @@ func main(){
     router.GET("/signin", signin)
     router.POST("/signin", signin_post)
     router.POST("/feed", feed)
-    router.POST("/", index)
+    router.GET("/", index)
     router.Run()
 }

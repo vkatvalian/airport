@@ -5,6 +5,7 @@ import (
     "log"
     "os"
     "time"
+    "encoding/json"
     "net/http"
     "gorm.io/gorm"
     "gorm.io/driver/mysql"
@@ -17,17 +18,23 @@ var db *gorm.DB
 
 type Users struct {
     ID        uint      `gorm:"primaryKey"`
-    Username  string	`gorm:"not null"`
-    Email     string	`gorm:"not null"`
+    Username  string	`gorm:"unique;not null"`
+    Email     string	`gorm:"unique;not null"`
     Password  string	`gorm: "not null"`
     CreatedAt time.Time
     UpdatedAt time.Time
+}
+
+type GormErr struct {
+    Number  int    `json:"Number"`
+    Message string `json:"Message"`
 }
 
 func feed(c *gin.Context){
     username := c.PostForm("username")
     email := c.PostForm("email")
     password := []byte(c.PostForm("password"))
+
 
     hashed_password, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
     if err != nil {
@@ -46,11 +53,24 @@ func feed(c *gin.Context){
 	Password: string(hashed_password),
     }
 
-    db.Create(&user)
-    c.JSON(http.StatusOK, gin.H{
-	"status":  "success",
-        "message": username,
-    })
+    err = db.Create(&user).Error
+    if err := db.Create(&user).Error; err != nil {
+        byteErr, _ := json.Marshal(err)
+        var newError GormErr
+        json.Unmarshal((byteErr), &newError)
+	switch newError.Number {
+            case 1062:
+	         c.JSON(http.StatusOK, gin.H {
+                       "status": "fail",
+		       "message": "user exists",
+		 })
+	    default:
+		 c.JSON(http.StatusOK, gin.H {
+                       "status": "success",
+		       "message": username,
+		 })
+	}
+    }
 }
 
 func signup(c *gin.Context){
